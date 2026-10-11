@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Game of Life</title>
+		<style>
+			* {
+				margin: 0;                                                  padding: 0;
+			}
+			:root {
+				--grid-cols: 1;
+				--grid-rows: 1;
+			}
+			body {
+				height: 100vh;
+				width:100%;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+			}
+			.world {
+				display: grid;
+				grid-template-rows: repeat(var(--grid-rows), 1fr);
+				grid-template-columns: repeat(var(--grid-cols), 1fr);
+				border: 1px black solid;
+				box-sizing: border-box;
+			}
+			.block {
+				border: 1px black solid;
+				box-sizing: border-box;
+			}
+
+			.cell {
+				background-color: orange;
+			}
+		</style>
+	</head>
+	<body id="body"></body>
+	<script>
+		//main constants
+		const worldHeight = 1500;
+		const worldWidth = 750;
+
+		const blockHeight = 25;
+		const blockWidth = 25;
+
+		const worldArea = worldHeight * worldWidth;
+		const blockArea = blockHeight * blockWidth;
+
+		class Cell {
+			constructor(blockId, id, x, y) {
+				this.blockId = blockId;
+				this.id = Math.floor(Math.random() * id);
+				this.cords = { x, y };
+				Cell.all.push(this);
+			}
+			displayId(){
+				console.log(this.id);
+			}
+			displayCords(){
+				console.log(this.cords);
+			}
+
+			changeBlockId(newBlockId) {
+				this.blockId = newBlockId;
+			}
+
+			moveTop() {
+				let x = this.cords.x;
+				let y = this.cords.y;
+
+				this.cords = { x, y: y > 0 ? y - 1 : y }
+				this.changeBlockId(determineBlockId(this.cords.x, this.cords.y));
+			}
+			moveDown() {
+				let x = this.cords.x;
+				let y = this.cords.y;
+
+				this.cords = { x, y: y > 0 && y < (worldHeight / blockHeight) - 1 ? y + 1 : y }
+				this.changeBlockId(determineBlockId(this.cords.x, this.cords.y));
+			}
+			moveRight() {
+				let x = this.cords.x;
+				let y = this.cords.y;
+
+				this.cords = { x: x > 0 && x < (worldWidth / blockWidth) - 1 ? x + 1 : x, y }
+				this.changeBlockId(determineBlockId(this.cords.x, this.cords.y));
+			}
+			moveLeft() {
+				let x = this.cords.x;
+				let y = this.cords.y;
+
+				this.cords = { x: x > 0 && x < (worldWidth / blockWidth) ? x - 1 : x, y }
+				this.changeBlockId(determineBlockId(this.cords.x, this.cords.y));
+			}
+			randomMove() {
+				const randomNumber = Math.floor(Math.random() * 4);
+				switch(randomNumber) {
+					case 0:
+						this.moveRight();
+						break;
+					case 1:
+						this.moveLeft();
+						break;
+					case 2:
+						this.moveTop();
+						break;
+					case 3:
+						this.moveDown();
+						break;
+				}
+			}
+			
+			//to keep track of all cells
+			static all = [];
+
+			static deleteCell(id){
+				let cells = Cell.all;
+				for (let i = 0; i < cells.length; i++) {
+					if(cells[i].id == id){
+						Cell.all.splice(cells[i], 1);
+					}
+				}
+			}
+		};
+
+		//build world function
+		const body = document.getElementById("body")
+		function buildWorld(){
+			const world = document.createElement("div");
+			world.style.height = `${worldHeight}px`;
+			world.style.width = `${worldWidth}px`;
+			world.classList.add('world');
+			body.appendChild(world);
+			world.style.setProperty('--grid-rows', worldHeight / blockHeight);
+			world.style.setProperty('--grid-cols', worldWidth / blockWidth);
+
+			let block;
+			
+			for (let b = 0; b < worldArea / blockArea; b++) {
+				block = document.createElement("div");
+				block.style.height = `${blockHeight}px`;
+				block.style.width = `${blockWidth}px`;
+				block.id = b;
+				world.appendChild(block).className = "block";
+			};
+		};
+
+		//set Initial state
+		function setInitialState() {
+			const startBlocks = [14, 87, 203, 311, 456, 520, 678, 749, 832, 901, 1045, 1130, 1287, 1356, 1423, 1509, 1612, 1688, 1745, 1799, 52, 167, 389, 614, 795, 968, 1212, 1394, 1561, 1723];
+			for (let i = 0; i < startBlocks.length ; i++) {
+				const block = document.getElementById(startBlocks[i]);
+				const startBlockCords = determineBlockCords(startBlocks[i]);
+				const newCell = new Cell(startBlocks[i], startBlocks[i], startBlockCords.x, startBlockCords.y );
+				block.classList.add('cell');
+			};
+		};
+
+		function updateWorld() {
+			let cells = Cell.all;
+			for (let i = 0; i < cells.length; i++) {
+				let oldBlockId = cells[i].blockId;
+				cells[i].randomMove();
+				document.getElementById(oldBlockId).classList.remove('cell');
+				document.getElementById(cells[i].blockId).classList.add('cell');
+			};
+		};
+
+		function determineBlockCords(id) {
+			let x = id % (worldWidth / blockWidth);
+			let y = Math.floor(id / (worldWidth / blockWidth));
+			return { x, y };
+		};
+
+		function determineBlockId(x, y) {
+			return y * (worldWidth / blockWidth) + x; 
+		}
+
+		buildWorld();
+		setInitialState();
+		
+		setInterval(() => {
+			updateWorld();
+		}, 100);
+	</script>
+</html>
+
