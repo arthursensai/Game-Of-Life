@@ -12,7 +12,7 @@
 			}
 			body {
 				height: 100vh;
-				width:100%;
+				width: 100%;
 				display: flex;
 				align-items: center;
 				justify-content: center;
@@ -30,7 +30,7 @@
 			}
 
 			.cell {
-				background-color: orange;
+				background-color: hsl(300,76%,72%);
 			}
 		</style>
 	</head>
@@ -38,13 +38,17 @@
 	<script>
 		//main constants
 		const worldHeight = 1500;
-		const worldWidth = 750;
+		const worldWidth = 900;
 
 		const blockHeight = 25;
 		const blockWidth = 25;
 
 		const worldArea = worldHeight * worldWidth;
 		const blockArea = blockHeight * blockWidth;
+		
+		const height = worldHeight / blockHeight;
+		const width = worldWidth / blockWidth;
+		const area = worldArea / blockArea;
 
 		class Cell {
 			constructor(blockId, id, x, y) {
@@ -53,62 +57,51 @@
 				this.cords = { x, y };
 				Cell.all.push(this);
 			}
-			displayId(){
-				console.log(this.id);
-			}
-			displayCords(){
-				console.log(this.cords);
-			}
-
 			changeBlockId(newBlockId) {
 				this.blockId = newBlockId;
 			}
 
-			moveTop() {
+			changeCords(x, y){
+				this.cords.x = x;
+				this.cords.y = y;
+			}
+
+			move() {
 				let x = this.cords.x;
 				let y = this.cords.y;
+				let cells = Cell.all;
 
-				this.cords = { x, y: y > 0 ? y - 1 : y }
-				this.changeBlockId(determineBlockId(this.cords.x, this.cords.y));
-			}
-			moveDown() {
-				let x = this.cords.x;
-				let y = this.cords.y;
+				//determine all possible nearby blocks
+				let possibleNearbyBlocks = [
+					{x: x - 1, y: y - 1},
+					{x: x - 1, y},
+					{x: x - 1, y: y + 1},
+					{x, y: y + 1},
+					{x: x + 1, y: y + 1},
+					{x: x + 1, y},
+					{x: x + 1, y: y - 1},
+					{x, y: y - 1}
+				];
 
-				this.cords = { x, y: y > 0 && y < (worldHeight / blockHeight) - 1 ? y + 1 : y }
-				this.changeBlockId(determineBlockId(this.cords.x, this.cords.y));
-			}
-			moveRight() {
-				let x = this.cords.x;
-				let y = this.cords.y;
+				//filter
+				let nearbyBlocksUnfiltred = possibleNearbyBlocks.filter(nearbyBlock => (nearbyBlock.x > 0 && nearbyBlock.x < width - 1 && nearbyBlock.y > 0 && nearbyBlock.y < height - 1));
 
-				this.cords = { x: x > 0 && x < (worldWidth / blockWidth) - 1 ? x + 1 : x, y }
-				this.changeBlockId(determineBlockId(this.cords.x, this.cords.y));
-			}
-			moveLeft() {
-				let x = this.cords.x;
-				let y = this.cords.y;
+				let nearbyBlocks = [];
 
-				this.cords = { x: x > 0 && x < (worldWidth / blockWidth) ? x - 1 : x, y }
-				this.changeBlockId(determineBlockId(this.cords.x, this.cords.y));
-			}
-			randomMove() {
-				const randomNumber = Math.floor(Math.random() * 4);
-				switch(randomNumber) {
-					case 0:
-						this.moveRight();
-						break;
-					case 1:
-						this.moveLeft();
-						break;
-					case 2:
-						this.moveTop();
-						break;
-					case 3:
-						this.moveDown();
-						break;
-				}
-			}
+				//check avalaibilty
+				for(let i = 0; i < cells.length; i++){
+					nearbyBlocks = nearbyBlocksUnfiltred.filter(block => (block.x != cells[i].cords.x && block.y != cells[i].cords.y));	
+				};
+
+				let randomNum = Math.floor(Math.random() * nearbyBlocks.length);
+				let newBlockCords = {
+					x: nearbyBlocks[randomNum].x,
+					y: nearbyBlocks[randomNum].y
+};
+				this.changeCords(newBlockCords.x, newBlockCords.y);
+				this.changeBlockId(determineBlockId(newBlockCords.x, newBlockCords.y));
+			};
+
 			
 			//to keep track of all cells
 			static all = [];
@@ -160,7 +153,7 @@
 			let cells = Cell.all;
 			for (let i = 0; i < cells.length; i++) {
 				let oldBlockId = cells[i].blockId;
-				cells[i].randomMove();
+				cells[i].move();
 				document.getElementById(oldBlockId).classList.remove('cell');
 				document.getElementById(cells[i].blockId).classList.add('cell');
 			};
@@ -175,8 +168,8 @@
 		function determineBlockId(x, y) {
 			return y * (worldWidth / blockWidth) + x; 
 		}
-
-		buildWorld();
+		
+		buildWorld();	
 		setInitialState();
 		
 		setInterval(() => {
